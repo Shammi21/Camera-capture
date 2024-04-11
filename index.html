@@ -10,14 +10,23 @@
 	<button id="capture-btn" style="display:none;">Capture Photo</button>
 	<video id="video" width="640" height="480" style="display:none;"></video>
 	<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+	<div id="ocr-result"></div>
+
+	<!-- Tesseract.js library -->
+	<!-- v5 -->
+	
+	<script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
 
 	<script>
+
+
 		const openCameraButton = document.getElementById('open-camera-btn');
 		const captureButton = document.getElementById('capture-btn');
 		const video = document.getElementById('video');
 		const canvas = document.getElementById('canvas');
+		const ocrResult = document.getElementById('ocr-result');
 
-		async function openCameraPermission(){
+		async function openCameraPermission() {
 			try {
 				const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
 				video.srcObject = stream;
@@ -28,19 +37,35 @@
 				console.error("Error accessing the camera:", error);
 			}
 		}
-		openCameraButton.addEventListener('click', async () => {
-			openCameraPermission()
-		});
-		openCameraPermission()
 
-		captureButton.addEventListener('click', () => {
-			const context = canvas.getContext('2d');
-			context.drawImage(video, 0, 0, canvas.width, canvas.height);
-			const dataURL = canvas.toDataURL('image/png');
-			const capturedImage = new Image();
-			capturedImage.src = dataURL;
-			document.body.appendChild(capturedImage);
+		openCameraButton.addEventListener('click', () => {
+			openCameraPermission();
 		});
+
+		openCameraPermission();
+
+		captureButton.addEventListener('click', async () => {
+			try {
+				const context = canvas.getContext('2d');
+				context.drawImage(video, 0, 0, canvas.width, canvas.height);
+				const dataURL = canvas.toDataURL('image/png');
+				const capturedImage = new Image();
+				capturedImage.src = dataURL;
+				document.body.appendChild(capturedImage);
+
+				const worker = Tesseract.createWorker();
+				await worker.load();
+				await worker.loadLanguage('eng');
+				await worker.initialize('eng');
+				var { data: { text } } = await worker.recognize(capturedImage);
+    			console.log(text);
+
+
+			} catch (error) {
+				console.error("Error processing image:", error);
+			}
+		});
+
 	</script>
 </body>
 
